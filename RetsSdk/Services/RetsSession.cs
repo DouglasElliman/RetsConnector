@@ -53,7 +53,7 @@ namespace CrestApps.RetsSdk.Services
                     XElement element = doc.Descendants(ns + "RETS-RESPONSE").FirstOrDefault()
                     ?? throw new RetsParsingException("Unable to find the RETS-RESPONSE element in the response.");
 
-                    var parts = element.FirstNode.ToString().Split(Environment.NewLine);
+                    var parts = element.FirstNode.ToString().Split(new []{'\r', '\n'});
                     var cookie = response.Headers.GetValues("Set-Cookie").FirstOrDefault();
 
                     return GetRetsResource(parts, cookie);
@@ -91,6 +91,11 @@ namespace CrestApps.RetsSdk.Services
 
                 if (Enum.TryParse(line[0].Trim(), out Capability result))
                 {
+                    if (line[0].Trim().StartsWith("https") == false)
+                    {
+                        var test = Options.LoginUrl.Replace("/server/login", "");
+                        resource.AddCapability(result, $"{test}{line[1].Trim()}");
+                    }
                     resource.AddCapability(result, line[1].Trim());
                 }
             }
@@ -132,7 +137,6 @@ namespace CrestApps.RetsSdk.Services
 
             return null;
         }
-
 
         public bool IsStarted()
         {
