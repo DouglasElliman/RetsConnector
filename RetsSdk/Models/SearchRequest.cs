@@ -1,5 +1,4 @@
-﻿using JetBrains.Annotations;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -18,8 +17,7 @@ namespace CrestApps.RetsSdk.Models
         
         public int StandardNames { get; set; } = 0;
 
-        [CanBeNull] 
-        public string RawQuery { get; set; } = null;
+        public string? RawQuery { get; set; } = null;
 
         public QueryParameterGroup ParameterGroup { get; set; }
         private List<string> Columns = new List<string>();

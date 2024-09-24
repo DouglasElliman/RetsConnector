@@ -4,27 +4,26 @@
     <TargetFramework>net9.0</TargetFramework>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-    <Authors>CrestApps</Authors>
+    <Authors>CrestApps, Douglas Elliman</Authors>
     <Company>CrestApps.com</Company>
     <Description>CrestApps RetsSdk a .NET Core client library for interacting with a RETS server to pull real estate listings, photos and other data made available from an MLS system.</Description>
     <Copyright>CrestApps 2019</Copyright>
     <PackageTags>RETS CrestApps MLS real estate listings Mike Alhayek Alhayek</PackageTags>
     <RootNamespace>CrestApps.RetsSdk</RootNamespace>
-    <PackageId>CrestApps.RetsSdk</PackageId>
+    <PackageId>Elliman.CrestApps.RetsSdk</PackageId>
     <PackageLicenseUrl>https://opensource.org/licenses/MIT</PackageLicenseUrl>
     <PackageProjectUrl>https://www.crestapps.com/</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/CrestApps/RetsConnector</RepositoryUrl>
-    <PackageIconUrl>https://avatars1.githubusercontent.com/u/24724371?s=460&amp;v=4</PackageIconUrl>
-    <Version>1.0.1</Version>
-    <Platforms>AnyCPU;x86</Platforms>
+    <RepositoryUrl>https://github.com/DouglasElliman/RetsConnector</RepositoryUrl>
+    <PackageIconUrl>https://github.com/organizations/DouglasElliman/settings/profile</PackageIconUrl>
+    <Version>1.0.4</Version>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Http" Version="6.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="6.0.0" />
-    <PackageReference Include="MimeKit" Version="3.4.1" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.0-rc.1.24431.7" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.0-rc.1.24431.7" />
+    <PackageReference Include="MimeKit" Version="4.7.1" />
     <PackageReference Include="MimeTypeMap.Core" Version="1.0.0" />
-    <PackageReference Include="X.PagedList" Version="8.4.3" />
+    <PackageReference Include="X.PagedList" Version="10.2.1" />
   </ItemGroup>
 
 </Project>

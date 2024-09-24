@@ -96,7 +96,10 @@ namespace CrestApps.RetsSdk.Services
                         var test = Options.LoginUrl.Replace("/server/login", "");
                         resource.AddCapability(result, $"{test}{line[1].Trim()}");
                     }
-                    resource.AddCapability(result, line[1].Trim());
+                    else
+                    {
+                        resource.AddCapability(result, line[1].Trim());    
+                    }
                 }
             }
 
