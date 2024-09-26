@@ -15,7 +15,8 @@
     <PackageProjectUrl>https://www.crestapps.com/</PackageProjectUrl>
     <RepositoryUrl>https://github.com/DouglasElliman/RetsConnector</RepositoryUrl>
     <PackageIconUrl>https://github.com/organizations/DouglasElliman/settings/profile</PackageIconUrl>
-    <Version>1.0.4</Version>
+    <Version>1.0.8</Version>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>

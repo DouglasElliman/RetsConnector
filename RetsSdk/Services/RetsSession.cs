@@ -93,8 +93,9 @@ namespace CrestApps.RetsSdk.Services
                 {
                     if (line[0].Trim().StartsWith("https") == false)
                     {
-                        var test = Options.LoginUrl.Replace("/server/login", "");
-                        resource.AddCapability(result, $"{test}{line[1].Trim()}");
+                        //var test = Options.LoginUrl.Replace("/server/login", "");
+                        //resource.AddCapability(result, $"{test}{line[1].Trim()}");
+                        resource.AddCapability(result, $"{Options.BaseUrl}{line[1].Trim()}");
                     }
                     else
                     {
@@ -115,7 +116,7 @@ namespace CrestApps.RetsSdk.Services
                 return null;
             }
 
-            string agentData = Str.Md5(Options.UserAgent + ":" + Options.UserAgentPassward);
+            string agentData = Str.Md5(Options.UserAgent + ":" + Options.UserAgentPassword);
 
             return $"{agentData}::{sessionId}:{Options.Version.AsHeader()}";
         }
