@@ -37,7 +37,7 @@ namespace CrestApps.RetsSdk.Services
             }
         }
 
-        public async Task<bool> Start()
+        public async Task<bool> Start(bool backEnd)
         {
 
             _Resource = await RetsRequester.Get(LoginUri, async (response) =>
@@ -58,7 +58,7 @@ namespace CrestApps.RetsSdk.Services
 
                     return GetRetsResource(parts, cookie);
                 }
-            });
+            }, backEnd );
 
             return IsStarted();
 
@@ -66,7 +66,7 @@ namespace CrestApps.RetsSdk.Services
 
         public async Task End()
         {
-            await RetsRequester.Get(LogoutUri, _Resource);
+            await RetsRequester.Get(LogoutUri, false, _Resource);
 
             _Resource = null;
         }
@@ -91,7 +91,7 @@ namespace CrestApps.RetsSdk.Services
 
                 if (Enum.TryParse(line[0].Trim(), out Capability result))
                 {
-                    if (line[0].Trim().StartsWith("https") == false)
+                    if (line[1].ToLower().Trim().StartsWith("https") == false)
                     {
                         //var test = Options.LoginUrl.Replace("/server/login", "");
                         //resource.AddCapability(result, $"{test}{line[1].Trim()}");

@@ -10,7 +10,7 @@ namespace CrestApps.RetsSdk.Services
     {
         bool IsConnected { get; }
 
-        Task<bool> Connect();
+        Task<bool> Connect(bool backEnd);
         Task Disconnect();
 
         Task<SearchResult> Search(SearchRequest request);

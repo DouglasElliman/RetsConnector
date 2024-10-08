@@ -5,7 +5,7 @@ namespace CrestApps.RetsSdk.Services
 {
     public interface IRetsSession
     {
-        Task<bool> Start();
+        Task<bool> Start(bool backEnd);
         Task End();
 
         SessionResource Resource { get; }

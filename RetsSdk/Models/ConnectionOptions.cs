@@ -5,8 +5,11 @@ namespace CrestApps.RetsSdk.Models
 {
     public class ConnectionOptions
     {
-        public string Username { get; set; }
-        public string Password { get; set; }
+        public string PublicUsername { get; set; }
+        public string PublicPassword { get; set; }
+        public string PrivateUsername { get; set; }
+        public string PrivatePassword { get; set; }
+        
         public AuthenticationType Type { get; set; }
         public string UserAgent { get; set; }
         public string UserAgentPassword { get; set; }

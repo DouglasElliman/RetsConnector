@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -53,6 +54,7 @@ namespace CrestApps.RetsSdk.Helpers
 
         public static string Md5(string input)
         {
+            
             // Use input string to calculate MD5 hash
             using (System.Security.Cryptography.MD5 md5 = System.Security.Cryptography.MD5.Create())
             {
@@ -63,7 +65,8 @@ namespace CrestApps.RetsSdk.Helpers
                 StringBuilder sb = new StringBuilder();
                 for (int i = 0; i < hashBytes.Length; i++)
                 {
-                    sb.Append(hashBytes[i].ToString("X2"));
+                    //sb.Append(hashBytes[i].ToString("X2"));
+                    sb.Append(hashBytes[i].ToString("x2"));
                 }
                 return sb.ToString();
             }

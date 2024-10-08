@@ -21,7 +21,7 @@ namespace CrestApps.RetsSdk.Services
     {
         private readonly IRetsRequester Requester;
         private readonly IRetsSession Session;
-
+        private bool BackEnd { get; set; }
         protected Uri GetObjectUri => Session.Resource.GetCapability(Capability.GetObject);
         protected Uri SearchUri => Session.Resource.GetCapability(Capability.Search);
         protected Uri GetMetadataUri => Session.Resource.GetCapability(Capability.GetMetadata);
@@ -35,12 +35,13 @@ namespace CrestApps.RetsSdk.Services
 
         public bool IsConnected => Session.IsStarted();
 
-        public async Task<bool> Connect()
+        public async Task<bool> Connect(bool backEnd)
         {
+            BackEnd = backEnd;
             if (Session.IsStarted()) 
                 return true;
 
-            return await Session.Start();
+            return await Session.Start(BackEnd);
         }
 
         public async Task Disconnect()
@@ -136,7 +137,7 @@ namespace CrestApps.RetsSdk.Services
                     
                     return result;
                 }
-            }, Session.Resource);
+            }, BackEnd, Session.Resource);
         }
 
         public async Task<RetsSystem> GetSystemMetadata()
@@ -182,7 +183,7 @@ namespace CrestApps.RetsSdk.Services
 
                     return system;
                 }
-            }, Session.Resource);
+            }, BackEnd, Session.Resource);
         }
 
         public async Task<RetsResourceCollection> GetResourcesMetadata()
@@ -288,7 +289,7 @@ namespace CrestApps.RetsSdk.Services
             {
                 if (!Session.IsStarted())
                 {
-                    await Connect();
+                    await Connect(BackEnd);
                 }
 
                 action?.Invoke();
@@ -311,7 +312,7 @@ namespace CrestApps.RetsSdk.Services
             {
                 if (!Session.IsStarted())
                 {
-                    await Connect();
+                    await Connect(BackEnd);
                 }
 
                 TResult result = await action.Invoke();
@@ -436,7 +437,7 @@ namespace CrestApps.RetsSdk.Services
 
                 return files;
 
-            }, Session.Resource);
+            }, BackEnd, Session.Resource);
         }
 
 
@@ -452,7 +453,7 @@ namespace CrestApps.RetsSdk.Services
 
             uriBuilder.Query = query.ToString();
 
-            return await Requester.Get(uriBuilder.Uri, async (response) => await ParseMetadata<T>(response), Session.Resource);
+            return await Requester.Get(uriBuilder.Uri, async (response) => await ParseMetadata<T>(response), BackEnd, Session.Resource);
         }
 
 
@@ -468,7 +469,7 @@ namespace CrestApps.RetsSdk.Services
 
             uriBuilder.Query = query.ToString();
 
-            return await Requester.Get(uriBuilder.Uri, async (response) => await ParseMetadataCollection<T>(response), Session.Resource);
+            return await Requester.Get(uriBuilder.Uri, async (response) => await ParseMetadataCollection<T>(response), BackEnd, Session.Resource);
         }
 
         protected async Task<T> ParseMetadata<T>(HttpResponseMessage response)

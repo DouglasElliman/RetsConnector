@@ -1,11 +1,13 @@
 ﻿using Microsoft.Extensions.Logging;
 using CrestApps.RetsSdk.Models;
 using System;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
+using CrestApps.RetsSdk.Helpers;
 using Microsoft.Extensions.Options;
 
 namespace CrestApps.RetsSdk.Services
@@ -22,9 +24,9 @@ namespace CrestApps.RetsSdk.Services
         }
 
 
-        public async Task Get(Uri uri, Action<HttpResponseMessage> action, SessionResource resource = null, bool ensureSuccessStatusCode = true)
+        public async Task Get(Uri uri, Action<HttpResponseMessage> action, bool backEnd, SessionResource resource = null, bool ensureSuccessStatusCode = true)
         {
-            using (var client = GetClient(resource))
+            using (var client = GetClient(resource, backEnd))
             {
                 var response = await client.GetAsync(uri);
 
@@ -37,10 +39,36 @@ namespace CrestApps.RetsSdk.Services
             }
         }
 
-        public async Task<T> Get<T>(Uri uri, Func<HttpResponseMessage, Task<T>> action, SessionResource resource = null, bool ensureSuccessStatusCode = true) where T : class
+        public async Task<T> Get<T>(Uri uri, Func<HttpResponseMessage, Task<T>> action, bool backEnd, SessionResource resource = null, bool ensureSuccessStatusCode = true) where T : class
         {
-            using (var client = GetClient(resource))
+            using (var client = GetClient(resource, backEnd))
             {
+                #region Keep
+               //  var request = new HttpRequestMessage(HttpMethod.Get, "https://r_idx.gsmls.com/rets_idx/login.do");
+               //  request.Headers.Add("RETS-UA-Authorization", "Digest cf6487fbe11e6c35b4197cc239618bae");
+               //  request.Headers.Add("User-Agent", "DouglasEllimanofNJ/1.0");
+               //  request.Headers.Add("RETS-Version", "RETS/1.5");
+               //  var response1 = await client.SendAsync(request);
+               //
+               // var x =  request.Headers.Authorization.ToString();
+               //Authorization: Digest username="DouglasEllimanofNJ",realm="r_idx.gsmls.com",nonce="168bad92c945eda7b667e80af3093aee",uri="/rets_idx/login.do",cnonce="262bc259d7fe8fecfccd15767c29900d",nc=00000001,response="e6de9adf65af3ff5b4af1b1b17dc19eb",qop="auth",opaque="5ccdef346870ab04ddfe0412367fccba"
+               
+               
+                //Console.WriteLine(await response1.Content.ReadAsStringAsync());
+                // var request = new HttpRequestMessage(HttpMethod.Get, "https://r_idx.gsmls.com/rets_idx/login.do");
+                // request.Headers.Add("RETS-UA-Authorization", "Digest cf6487fbe11e6c35b4197cc239618bae");
+                // request.Headers.Add("User-Agent", "DouglasEllimanofNJ/1.0");
+                // request.Headers.Add("RETS-Version", "RETS/1.5");
+                // request.Headers.Add("Cookie", "JSESSIONID=W_kX9uAvRNysMktwzutEvhM8zI4XRXpOeGCwwf0q.jbvend5; RETS-Session-ID=W_kX9uAvRNysMktwzutEvhM8zI4XRXpOeGCwwf0q");
+                // var response1 = await client.SendAsync(request);
+                //
+
+                //foreach (var header in response1.Headers)
+                //{
+                //    Console.WriteLine(header.Key + ": " + header.Value.ToString());
+                //}
+                //var wwwAuthenticateHeaderValue = response1.Headers.GetValues("WWW-Authenticate").FirstOrDefault();
+                #endregion
                 var response = await client.GetAsync(uri);
 
                 if (ensureSuccessStatusCode)
@@ -53,21 +81,34 @@ namespace CrestApps.RetsSdk.Services
         }
 
 
-        public async Task Get(Uri uri, SessionResource resource = null, bool ensureSuccessStatusCode = true)
+        public async Task Get(Uri uri, bool backEnd, SessionResource resource = null, bool ensureSuccessStatusCode = true)
         {
-            await Get(uri, null, resource, ensureSuccessStatusCode);
+            await Get(uri, null, backEnd, resource, ensureSuccessStatusCode);
         }
 
-        protected virtual HttpClient GetClient(SessionResource resource)
+        protected virtual HttpClient GetClient(SessionResource resource, bool backEnd)
         {
-            HttpClient client = GetAuthenticatedClient();
+            HttpClient client = GetAuthenticatedClient(backEnd);
 
+            if (Options.UserAgentPassword != "")
+            {
+                var agent = Str.Md5($"{Options.UserAgent}:{Options.UserAgentPassword}");
+                var test = Str.Md5($"{agent}:::{Options.Version.AsHeader()}");
+                //Console.WriteLine(test);
+                client.DefaultRequestHeaders.Add("RETS-UA-Authorization", $"Digest {test}");
+            }
+
+            
+            //var agentdata1 = Str.Md5($"{Str.Md5($"{Options.UserAgent}:{Options.UserAgentPassword}")}:{Options.Version.AsHeader()}");
+            
+            
             client.Timeout = Options.Timeout;
             client.DefaultRequestHeaders.Add("User-Agent", Options.UserAgent);
             client.DefaultRequestHeaders.Add("RETS-Version", Options.Version.AsHeader());
             client.DefaultRequestHeaders.Add("Accept-Encoding", "gzip");
             client.DefaultRequestHeaders.Add("Accept", "*/*");
-
+            //client.DefaultRequestHeaders.Add("RETS-UA-Authorization", "Digest cf6487fbe11e6c35b4197cc239618bae");
+            
             if (resource != null && !string.IsNullOrWhiteSpace(resource.Cookie))
             {
                 //client.DefaultRequestHeaders.Add("Set-Cookie", resource.Cookie);
@@ -82,12 +123,20 @@ namespace CrestApps.RetsSdk.Services
             return client;
         }
 
-        private HttpClient GetAuthenticatedClient()
+        private HttpClient GetAuthenticatedClient(bool backEnd)
         {
             if (Options.Type == Models.Enums.AuthenticationType.Digest)
             {
                 var credCache = new CredentialCache();
-                credCache.Add(new Uri(Options.LoginUrl), Options.Type.ToString(), new NetworkCredential(Options.Username, Options.Password));
+                if (backEnd)
+                {
+                    credCache.Add(new Uri(Options.LoginUrl), Options.Type.ToString(), new NetworkCredential(Options.PrivateUsername, Options.PrivatePassword));
+                }
+                else
+                {
+                    credCache.Add(new Uri(Options.LoginUrl), Options.Type.ToString(), new NetworkCredential(Options.PublicUsername, Options.PublicPassword));    
+                }
+                
 
                 // The UseCookies and DefaultRequestHeaders.Add("Cookie", ...) have different behavior in net48 and net6.
                 // We need to force UseCookies = false to both have the same expect behavior
@@ -98,7 +147,16 @@ namespace CrestApps.RetsSdk.Services
 
             HttpClient client = HttpClientFactory.CreateClient();
 
-            byte[] byteArray = Encoding.ASCII.GetBytes($"{Options.Username}:{Options.Password}");
+            byte[] byteArray;
+            if (backEnd)
+            {
+                byteArray= Encoding.ASCII.GetBytes($"{Options.PrivateUsername}:{Options.PrivatePassword}");
+            }
+            else
+            {
+                byteArray= Encoding.ASCII.GetBytes($"{Options.PublicUsername}:{Options.PublicPassword}");    
+            }
+            
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
 
             return client;
