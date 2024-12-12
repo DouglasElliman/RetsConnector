@@ -39,35 +39,34 @@ namespace CrestApps.RetsSdk.Services
 
         public async Task<bool> Start(bool backEnd)
         {
+            
 
-            _Resource = await RetsRequester.Get(LoginUri, async (response) =>
-            {
-                using (Stream stream = await GetStream(response))
+                _Resource = await RetsRequester.Get(LoginUri, async (response) =>
                 {
-                    XDocument doc = XDocument.Load(stream);
+                    using (Stream stream = await GetStream(response))
+                    {
+                        XDocument doc = XDocument.Load(stream);
 
-                    AssertValidReplay(doc.Root);
+                        AssertValidReplay(doc.Root);
 
-                    XNamespace ns = doc.Root.GetDefaultNamespace();
+                        XNamespace ns = doc.Root.GetDefaultNamespace();
 
-                    XElement element = doc.Descendants(ns + "RETS-RESPONSE").FirstOrDefault()
-                    ?? throw new RetsParsingException("Unable to find the RETS-RESPONSE element in the response.");
+                        XElement element = doc.Descendants(ns + "RETS-RESPONSE").FirstOrDefault()
+                                           ?? throw new RetsParsingException("Unable to find the RETS-RESPONSE element in the response.");
 
-                    var parts = element.FirstNode.ToString().Split(new []{'\r', '\n'});
-                    var cookie = response.Headers.GetValues("Set-Cookie").FirstOrDefault();
+                        var parts = element.FirstNode.ToString().Split(new []{'\r', '\n'});
+                        var cookie = response.Headers.GetValues("Set-Cookie").FirstOrDefault();
 
-                    return GetRetsResource(parts, cookie);
-                }
-            }, backEnd );
+                        return GetRetsResource(parts, cookie);
+                    }
+                }, backEnd );
 
-            return IsStarted();
-
+                return IsStarted();
         }
 
         public async Task End()
         {
             await RetsRequester.Get(LogoutUri, false, _Resource);
-
             _Resource = null;
         }
 
@@ -91,7 +90,7 @@ namespace CrestApps.RetsSdk.Services
 
                 if (Enum.TryParse(line[0].Trim(), out Capability result))
                 {
-                    if (line[1].ToLower().Trim().StartsWith("https") == false)
+                    if (line[1].ToLower().Trim().StartsWith("https") == false && line[1].ToLower().Trim().StartsWith("http") == false)
                     {
                         //var test = Options.LoginUrl.Replace("/server/login", "");
                         //resource.AddCapability(result, $"{test}{line[1].Trim()}");

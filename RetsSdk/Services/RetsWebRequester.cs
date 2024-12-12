@@ -30,6 +30,11 @@ namespace CrestApps.RetsSdk.Services
             {
                 var response = await client.GetAsync(uri);
 
+                if (uri.ToString().EndsWith("/logout"))
+                {
+                    //Console.WriteLine(await response.Content.ReadAsStringAsync());    
+                }
+                
                 if (ensureSuccessStatusCode)
                 {
                     response.EnsureSuccessStatusCode();
@@ -71,6 +76,12 @@ namespace CrestApps.RetsSdk.Services
                 #endregion
                 var response = await client.GetAsync(uri);
 
+                if (uri.ToString().EndsWith("/logout"))
+                {
+                    //Console.WriteLine(await response.Content.ReadAsStringAsync());    
+                }
+                
+                
                 if (ensureSuccessStatusCode)
                 {
                     response.EnsureSuccessStatusCode();
@@ -90,6 +101,8 @@ namespace CrestApps.RetsSdk.Services
         {
             HttpClient client = GetAuthenticatedClient(backEnd);
 
+            client.Timeout = new TimeSpan(0, 20, 0);
+            
             if (Options.UserAgentPassword != "")
             {
                 var agent = Str.Md5($"{Options.UserAgent}:{Options.UserAgentPassword}");

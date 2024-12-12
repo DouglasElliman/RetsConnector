@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web;
 using System.Xml.Linq;
@@ -98,7 +99,20 @@ namespace CrestApps.RetsSdk.Services
             {
                 using (var stream = await GetStream(response))
                 {
-                    var doc = XDocument.Load(stream);
+                    XDocument doc = default;
+                        
+                    try
+                    {
+                        using var sr = new StreamReader(stream);
+                        var content = await sr.ReadToEndAsync();
+                        doc = XDocument.Parse(content);
+                        //doc = XDocument.Load(stream);
+                    }
+                    catch (Exception e)
+                    {
+                        throw;
+                    } 
+                        
 
                     int code = GetReplayCode(doc.Root);
 
@@ -140,6 +154,20 @@ namespace CrestApps.RetsSdk.Services
             }, BackEnd, Session.Resource);
         }
 
+        private  string CleanInput(string strIn)
+        {
+            // Replace invalid characters with empty strings.
+            try {
+                return Regex.Replace(strIn, @"[^\w\.@-]", "",
+                    RegexOptions.None, TimeSpan.FromSeconds(1.5));
+            }
+            // If we timeout when replacing invalid characters,
+            // we should return Empty.
+            catch (RegexMatchTimeoutException) {
+                return String.Empty;
+            }
+        }
+        
         public async Task<RetsSystem> GetSystemMetadata()
         {
             var uriBuilder = new UriBuilder(GetMetadataUri);
