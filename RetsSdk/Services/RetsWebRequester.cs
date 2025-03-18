@@ -76,6 +76,8 @@ namespace CrestApps.RetsSdk.Services
                 #endregion
                 var response = await client.GetAsync(uri);
 
+                //Console.WriteLine(await response.Content.ReadAsStringAsync());
+                
                 if (uri.ToString().EndsWith("/logout"))
                 {
                     //Console.WriteLine(await response.Content.ReadAsStringAsync());    

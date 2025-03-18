@@ -55,8 +55,27 @@ namespace CrestApps.RetsSdk.Services
                                            ?? throw new RetsParsingException("Unable to find the RETS-RESPONSE element in the response.");
 
                         var parts = element.FirstNode.ToString().Split(new []{'\r', '\n'});
-                        var cookie = response.Headers.GetValues("Set-Cookie").FirstOrDefault();
-
+                        string cookie = "";
+                        var cookieParts = response.Headers.GetValues("Set-Cookie").ToList();
+                        
+                        //cookie += $"{cookieParts[3]}";
+                        //cookie += $"{cookieParts[4]}";
+                        //cookie += $"{cookieParts[2]}";
+                        // cookie += $"{cookieParts[1]}";
+                        // cookie += $"{cookieParts[0]}";
+                        
+                        foreach (var part in cookieParts)
+                        {
+                            if (part.Contains("ApplicationGateway", StringComparison.CurrentCultureIgnoreCase) == false)
+                            {
+                                cookie += $"{part}";
+                                //Console.WriteLine(part);
+                            }
+                        }
+                        
+                        //var cookie = response.Headers.GetValues("Set-Cookie").FirstOrDefault();
+                        //cookie =
+                        //    "ASLBSA=0003b8f03fe6c3e14d5b27475c9381e3a417fbf06b4b8c42bbf3b6135c600c7d88cb; ASLBSACORS=0003b8f03fe6c3e14d5b27475c9381e3a417fbf06b4b8c42bbf3b6135c600c7d88cb; ASP.NET_SessionId=2apollcqfvtwlrxkthjoiiru; ApplicationGatewayAffinity=095e8f65a8342f811b55199171891cfb; ApplicationGatewayAffinityCORS=095e8f65a8342f811b55199171891cfb";
                         return GetRetsResource(parts, cookie);
                     }
                 }, backEnd );
