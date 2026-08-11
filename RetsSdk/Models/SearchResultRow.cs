@@ -34,14 +34,28 @@ namespace CrestApps.RetsSdk.Models
                 throw new ArgumentOutOfRangeException($"Both '{nameof(columns)}' and '{nameof(values)}' must have the same size!");
             }
 
-            int keyIndex = Array.IndexOf(columns, primaryKeyColumnName);
-            if (keyIndex == -1)
+            int keyIndex = -1;
+            try
             {
-                throw new IndexOutOfRangeException($"The provided {nameof(primaryKeyColumnName)} is not found in the {nameof(columns)} array.");
+                keyIndex = Array.FindIndex(columns, c => string.Equals(c, primaryKeyColumnName, StringComparison.OrdinalIgnoreCase));   
+                if (keyIndex == -1)
+                {
+                    throw new IndexOutOfRangeException($"The provided {nameof(primaryKeyColumnName)} is not found in the {nameof(columns)} array.");
+                }
+
+                PrimaryKeyValue = values[keyIndex];
             }
+            catch (Exception e)
+            {
+                keyIndex = Array.FindIndex(columns, c => string.Equals(c, "PHOTOKEY", StringComparison.OrdinalIgnoreCase));
+                if (keyIndex == -1)
+                {
+                    throw new IndexOutOfRangeException($"The provided {nameof(primaryKeyColumnName)} is not found in the {nameof(columns)} array.");
+                }
 
-            PrimaryKeyValue = values[keyIndex];
-
+                PrimaryKeyValue = values[keyIndex];
+            } 
+            
             for (int index = 0; index < columnLength; index++)
             {
                 string rawValue = values[index];
@@ -50,7 +64,10 @@ namespace CrestApps.RetsSdk.Models
                 value.SetIsPrimaryKeyValue(keyIndex == index);
                 value.SetIsRestricted(RestrictedValue);
 
-                Values.TryAdd(columns[index].ToLower(), value);
+                if (!Values.ContainsKey(columns[index].ToLower()))
+                {
+                    Values.Add(columns[index].ToLower(), value);
+                }
             }
 
         }

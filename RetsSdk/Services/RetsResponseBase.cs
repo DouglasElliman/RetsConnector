@@ -62,7 +62,7 @@ namespace CrestApps.RetsSdk.Services
                 var replayText = root.Attribute("ReplyText");
                 string message = replayText?.Value ?? "Unknown error";
 
-                Log?.LogWarning(message);
+                Log?.LogWarning("RETS server returned ReplyCode {ReplyCode}: {ReplyText}", code, message);
 
                 if (code == 20210)
                 {
@@ -74,7 +74,7 @@ namespace CrestApps.RetsSdk.Services
                     throw new TooManyOutstandingRequests(message);
                 }
 
-                throw new RetsException(message);
+                throw new RetsException(message, code);
             }
         }
 

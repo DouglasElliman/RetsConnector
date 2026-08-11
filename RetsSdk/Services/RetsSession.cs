@@ -37,37 +37,55 @@ namespace CrestApps.RetsSdk.Services
             }
         }
 
-        public async Task<bool> Start()
+        public async Task<bool> Start(bool backEnd)
         {
+            
 
-            _Resource = await RetsRequester.Get(LoginUri, async (response) =>
-            {
-                using (Stream stream = await GetStream(response))
+                _Resource = await RetsRequester.Get(LoginUri, async (response) =>
                 {
-                    XDocument doc = XDocument.Load(stream);
+                    using (Stream stream = await GetStream(response))
+                    {
+                        XDocument doc = XDocument.Load(stream);
 
-                    AssertValidReplay(doc.Root);
+                        AssertValidReplay(doc.Root);
 
-                    XNamespace ns = doc.Root.GetDefaultNamespace();
+                        XNamespace ns = doc.Root.GetDefaultNamespace();
 
-                    XElement element = doc.Descendants(ns + "RETS-RESPONSE").FirstOrDefault()
-                    ?? throw new RetsParsingException("Unable to find the RETS-RESPONSE element in the response.");
+                        XElement element = doc.Descendants(ns + "RETS-RESPONSE").FirstOrDefault()
+                                           ?? throw new RetsParsingException("Unable to find the RETS-RESPONSE element in the response.");
 
-                    var parts = element.FirstNode.ToString().Split(Environment.NewLine);
-                    var cookie = response.Headers.GetValues("Set-Cookie").FirstOrDefault();
+                        var parts = element.FirstNode.ToString().Split(new []{'\r', '\n'});
+                        string cookie = "";
+                        var cookieParts = response.Headers.GetValues("Set-Cookie").ToList();
+                        
+                        //cookie += $"{cookieParts[3]}";
+                        //cookie += $"{cookieParts[4]}";
+                        //cookie += $"{cookieParts[2]}";
+                        // cookie += $"{cookieParts[1]}";
+                        // cookie += $"{cookieParts[0]}";
+                        
+                        foreach (var part in cookieParts)
+                        {
+                            if (part.Contains("ApplicationGateway", StringComparison.CurrentCultureIgnoreCase) == false)
+                            {
+                                cookie += $"{part}";
+                                //Console.WriteLine(part);
+                            }
+                        }
+                        
+                        //var cookie = response.Headers.GetValues("Set-Cookie").FirstOrDefault();
+                        //cookie =
+                        //    "ASLBSA=0003b8f03fe6c3e14d5b27475c9381e3a417fbf06b4b8c42bbf3b6135c600c7d88cb; ASLBSACORS=0003b8f03fe6c3e14d5b27475c9381e3a417fbf06b4b8c42bbf3b6135c600c7d88cb; ASP.NET_SessionId=2apollcqfvtwlrxkthjoiiru; ApplicationGatewayAffinity=095e8f65a8342f811b55199171891cfb; ApplicationGatewayAffinityCORS=095e8f65a8342f811b55199171891cfb";
+                        return GetRetsResource(parts, cookie);
+                    }
+                }, backEnd );
 
-                    return GetRetsResource(parts, cookie);
-                }
-            });
-
-            return IsStarted();
-
+                return IsStarted();
         }
 
         public async Task End()
         {
-            await RetsRequester.Get(LogoutUri, _Resource);
-
+            await RetsRequester.Get(LogoutUri, false, _Resource);
             _Resource = null;
         }
 
@@ -91,7 +109,16 @@ namespace CrestApps.RetsSdk.Services
 
                 if (Enum.TryParse(line[0].Trim(), out Capability result))
                 {
-                    resource.AddCapability(result, line[1].Trim());
+                    if (line[1].ToLower().Trim().StartsWith("https") == false && line[1].ToLower().Trim().StartsWith("http") == false)
+                    {
+                        //var test = Options.LoginUrl.Replace("/server/login", "");
+                        //resource.AddCapability(result, $"{test}{line[1].Trim()}");
+                        resource.AddCapability(result, $"{Options.BaseUrl}{line[1].Trim()}");
+                    }
+                    else
+                    {
+                        resource.AddCapability(result, line[1].Trim());    
+                    }
                 }
             }
 
@@ -107,7 +134,7 @@ namespace CrestApps.RetsSdk.Services
                 return null;
             }
 
-            string agentData = Str.Md5(Options.UserAgent + ":" + Options.UserAgentPassward);
+            string agentData = Str.Md5(Options.UserAgent + ":" + Options.UserAgentPassword);
 
             return $"{agentData}::{sessionId}:{Options.Version.AsHeader()}";
         }
@@ -132,7 +159,6 @@ namespace CrestApps.RetsSdk.Services
 
             return null;
         }
-
 
         public bool IsStarted()
         {

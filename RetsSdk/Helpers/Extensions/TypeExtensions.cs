@@ -45,7 +45,16 @@ namespace CrestApps.RetsSdk.Helpers.Extensions
 
             TypeConverter tc = TypeDescriptor.GetConverter(type);
 
-            return tc.ConvertFromString(value);
+            try
+            {
+                return tc.ConvertFromString(value);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                return null;
+            }
+            
         }
 
 

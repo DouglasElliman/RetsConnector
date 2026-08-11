@@ -1,29 +1,30 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-    <Authors>CrestApps</Authors>
+    <Authors>CrestApps, Douglas Elliman</Authors>
     <Company>CrestApps.com</Company>
     <Description>CrestApps RetsSdk a .NET Core client library for interacting with a RETS server to pull real estate listings, photos and other data made available from an MLS system.</Description>
     <Copyright>CrestApps 2019</Copyright>
     <PackageTags>RETS CrestApps MLS real estate listings Mike Alhayek Alhayek</PackageTags>
     <RootNamespace>CrestApps.RetsSdk</RootNamespace>
-    <PackageId>CrestApps.RetsSdk</PackageId>
+    <PackageId>Elliman.CrestApps.RetsSdk</PackageId>
     <PackageLicenseUrl>https://opensource.org/licenses/MIT</PackageLicenseUrl>
     <PackageProjectUrl>https://www.crestapps.com/</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/CrestApps/RetsConnector</RepositoryUrl>
-    <PackageIconUrl>https://avatars1.githubusercontent.com/u/24724371?s=460&amp;v=4</PackageIconUrl>
-    <Version>1.0.1</Version>
+    <RepositoryUrl>https://github.com/DouglasElliman/RetsConnector</RepositoryUrl>
+    <PackageIconUrl>https://github.com/organizations/DouglasElliman/settings/profile</PackageIconUrl>
+    <Version>1.1.3</Version>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Http" Version="3.1.4" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="3.1.4" />
-    <PackageReference Include="MimeKit" Version="2.8.0" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.3" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.3" />
+    <PackageReference Include="MimeKit" Version="4.17.0" />
     <PackageReference Include="MimeTypeMap.Core" Version="1.0.0" />
-    <PackageReference Include="X.PagedList" Version="8.0.7" />
+    <PackageReference Include="X.PagedList" Version="10.5.9" />
   </ItemGroup>
 
 </Project>
