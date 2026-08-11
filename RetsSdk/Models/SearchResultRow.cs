@@ -37,7 +37,7 @@ namespace CrestApps.RetsSdk.Models
             int keyIndex = -1;
             try
             {
-                keyIndex = Array.IndexOf(columns, primaryKeyColumnName);
+                keyIndex = Array.FindIndex(columns, c => string.Equals(c, primaryKeyColumnName, StringComparison.OrdinalIgnoreCase));   
                 if (keyIndex == -1)
                 {
                     throw new IndexOutOfRangeException($"The provided {nameof(primaryKeyColumnName)} is not found in the {nameof(columns)} array.");
@@ -47,7 +47,7 @@ namespace CrestApps.RetsSdk.Models
             }
             catch (Exception e)
             {
-                keyIndex = Array.IndexOf(columns, "PHOTOKEY");
+                keyIndex = Array.FindIndex(columns, c => string.Equals(c, "PHOTOKEY", StringComparison.OrdinalIgnoreCase));
                 if (keyIndex == -1)
                 {
                     throw new IndexOutOfRangeException($"The provided {nameof(primaryKeyColumnName)} is not found in the {nameof(columns)} array.");

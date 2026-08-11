@@ -13,5 +13,16 @@ namespace CrestApps.RetsSdk.Exceptions
              : base(message)
         {
         }
+
+        public RetsException(string message, int replyCode)
+             : base($"{message} (ReplyCode: {replyCode})")
+        {
+            ReplyCode = replyCode;
+        }
+
+        /// <summary>
+        /// The RETS ReplyCode the server returned, or <c>null</c> when it could not be determined.
+        /// </summary>
+        public int? ReplyCode { get; }
     }
 }

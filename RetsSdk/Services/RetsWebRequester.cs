@@ -1,10 +1,11 @@
-﻿using Microsoft.Extensions.Logging;
+﻿﻿﻿using Microsoft.Extensions.Logging;
 using CrestApps.RetsSdk.Models;
 using System;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Net.Security;
 using System.Text;
 using System.Threading.Tasks;
 using CrestApps.RetsSdk.Helpers;
@@ -74,22 +75,45 @@ namespace CrestApps.RetsSdk.Services
                 //}
                 //var wwwAuthenticateHeaderValue = response1.Headers.GetValues("WWW-Authenticate").FirstOrDefault();
                 #endregion
-                var response = await client.GetAsync(uri);
-
-                //Console.WriteLine(await response.Content.ReadAsStringAsync());
-                
-                if (uri.ToString().EndsWith("/logout"))
+                using (var response = await client.GetAsync(uri))
                 {
-                    //Console.WriteLine(await response.Content.ReadAsStringAsync());    
-                }
-                
-                
-                if (ensureSuccessStatusCode)
-                {
-                    response.EnsureSuccessStatusCode();
-                }
+                    if (ensureSuccessStatusCode)
+                    {
+                        response.EnsureSuccessStatusCode();
+                    }
 
-                return await action?.Invoke(response);
+                    // Buffer the body as raw bytes. Reading it into a string and re-encoding it as UTF-8
+                    // destroys binary payloads (images), because every byte that is not valid UTF-8 gets
+                    // replaced with U+FFFD.
+                    byte[] content = await response.Content.ReadAsByteArrayAsync();
+
+                    var newResponse = new HttpResponseMessage(response.StatusCode)
+                    {
+                        Content = new ByteArrayContent(content),
+                        ReasonPhrase = response.ReasonPhrase,
+                        Version = response.Version
+                    };
+
+                    foreach (var header in response.Headers)
+                    {
+                        newResponse.Headers.TryAddWithoutValidation(header.Key, header.Value);
+                    }
+
+                    // Content headers must be carried over too. Content-Type in particular holds the
+                    // multipart boundary, without which the response cannot be split into its parts.
+                    // Content-Length is skipped so ByteArrayContent can derive it from the buffer.
+                    foreach (var header in response.Content.Headers)
+                    {
+                        if (header.Key.Equals("Content-Length", StringComparison.OrdinalIgnoreCase))
+                        {
+                            continue;
+                        }
+
+                        newResponse.Content.Headers.TryAddWithoutValidation(header.Key, header.Value);
+                    }
+
+                    return await action?.Invoke(newResponse);
+                }
             }
         }
 
@@ -142,22 +166,12 @@ namespace CrestApps.RetsSdk.Services
         {
             if (Options.Type == Models.Enums.AuthenticationType.Digest)
             {
-                var credCache = new CredentialCache();
-                if (backEnd)
-                {
-                    credCache.Add(new Uri(Options.LoginUrl), Options.Type.ToString(), new NetworkCredential(Options.PrivateUsername, Options.PrivatePassword));
-                }
-                else
-                {
-                    credCache.Add(new Uri(Options.LoginUrl), Options.Type.ToString(), new NetworkCredential(Options.PublicUsername, Options.PublicPassword));    
-                }
-                
-
-                // The UseCookies and DefaultRequestHeaders.Add("Cookie", ...) have different behavior in net48 and net6.
-                // We need to force UseCookies = false to both have the same expect behavior
-                // See: https://stackoverflow.com/a/13287224
-
-                return new HttpClient(new HttpClientHandler { Credentials = credCache, UseCookies = false });
+                // Reuse a pooled SocketsHttpHandler across all Digest-auth requests so we don't burn a
+                // fresh TCP+TLS connection per call. Creating a new HttpClientHandler + HttpClient per
+                // request (previous behavior) exhausts SNAT ports in cloud environments like Azure
+                // Container Apps / App Service and manifests as HTTP 200 responses with empty bodies.
+                var handler = GetSharedDigestHandler(backEnd);
+                return new HttpClient(handler, disposeHandler: false);
             }
 
             HttpClient client = HttpClientFactory.CreateClient();
@@ -175,6 +189,71 @@ namespace CrestApps.RetsSdk.Services
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
 
             return client;
+        }
+
+        // Shared, connection-pooled handlers keyed by credential scope (public vs private/backEnd).
+        // These are static so a single set of pooled connections is reused across every RetsWebRequester
+        // instance for the lifetime of the process.
+        private static SocketsHttpHandler? _sharedDigestHandlerPublic;
+        private static SocketsHttpHandler? _sharedDigestHandlerPrivate;
+        private static readonly object _sharedDigestHandlerLock = new object();
+
+        private SocketsHttpHandler GetSharedDigestHandler(bool backEnd)
+        {
+            var existing = backEnd ? _sharedDigestHandlerPrivate : _sharedDigestHandlerPublic;
+            if (existing != null)
+            {
+                return existing;
+            }
+
+            lock (_sharedDigestHandlerLock)
+            {
+                existing = backEnd ? _sharedDigestHandlerPrivate : _sharedDigestHandlerPublic;
+                if (existing != null)
+                {
+                    return existing;
+                }
+
+                var credCache = new CredentialCache();
+                var username = backEnd ? Options.PrivateUsername : Options.PublicUsername;
+                var password = backEnd ? Options.PrivatePassword : Options.PublicPassword;
+                credCache.Add(new Uri(Options.LoginUrl), Options.Type.ToString(), new NetworkCredential(username, password));
+
+                var handler = new SocketsHttpHandler
+                {
+                    Credentials = credCache,
+                    // UseCookies=false preserves prior behavior where Cookie/RETS-Session-ID headers are
+                    // added explicitly per request in GetClient(...). See original comment referencing
+                    // https://stackoverflow.com/a/13287224 for the net48 vs modern-.NET rationale.
+                    UseCookies = false,
+                    AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
+                    PooledConnectionLifetime = TimeSpan.FromMinutes(5),
+                    PooledConnectionIdleTimeout = TimeSpan.FromMinutes(2),
+                    MaxConnectionsPerServer = 4,
+                    SslOptions = new SslClientAuthenticationOptions
+                    {
+                        RemoteCertificateValidationCallback = (_, _, _, sslPolicyErrors) =>
+                        {
+                            // Bypass SSL hostname mismatch for GSMLS RETS server.
+                            if (sslPolicyErrors == SslPolicyErrors.RemoteCertificateNameMismatch)
+                            {
+                                return true;
+                            }
+                            return sslPolicyErrors == SslPolicyErrors.None;
+                        }
+                    }
+                };
+
+                if (backEnd)
+                {
+                    _sharedDigestHandlerPrivate = handler;
+                }
+                else
+                {
+                    _sharedDigestHandlerPublic = handler;
+                }
+                return handler;
+            }
         }
     }
 }
